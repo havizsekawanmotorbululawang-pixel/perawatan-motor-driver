@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - 'Perawatan_Motor_Driver_Baru.zip'
       - 'Perawatan_Motor_Driver_Update.zip'
       - 'PerawatanMotor.zip'
       - '.github/workflows/build-apk.yml'
@@ -29,17 +30,20 @@ jobs:
 
       - name: Extract project ZIP
         run: |
-          if [ -f Perawatan_Motor_Driver_Update.zip ]; then
+          if [ -f Perawatan_Motor_Driver_Baru.zip ]; then
+            ZIP_FILE="Perawatan_Motor_Driver_Baru.zip"
+          elif [ -f Perawatan_Motor_Driver_Update.zip ]; then
             ZIP_FILE="Perawatan_Motor_Driver_Update.zip"
           else
             ZIP_FILE="PerawatanMotor.zip"
           fi
           unzip -o "$ZIP_FILE" -d extracted
-          PROJECT_DIR=$(dirname "$(find extracted -name pubspec.yaml -print -quit)")
-          if [ -z "$PROJECT_DIR" ]; then
+          PUBSPEC_PATH=$(find extracted -name pubspec.yaml -print -quit)
+          if [ -z "$PUBSPEC_PATH" ]; then
             echo "pubspec.yaml tidak ditemukan di dalam ZIP"
             exit 1
           fi
+          PROJECT_DIR=$(dirname "$PUBSPEC_PATH")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Project directory: $PROJECT_DIR"
 
