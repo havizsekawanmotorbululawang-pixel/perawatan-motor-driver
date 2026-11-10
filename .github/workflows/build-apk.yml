@@ -12,39 +12,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Ambil source code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Siapkan Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Siapkan Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      - name: Ekstrak proyek ZIP
+      - name: Extract project ZIP
         run: |
-          mkdir app
-          unzip PerawatanMotor.zip -d app
+          unzip PerawatanMotor.zip -d extracted
+          PROJECT_DIR=$(dirname "$(find extracted -name pubspec.yaml -print -quit)")
+          if [ -z "$PROJECT_DIR" ] || [ "$PROJECT_DIR" = "extracted" ]; then
+            PROJECT_DIR="extracted"
+          fi
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Project directory: $PROJECT_DIR"
 
-      - name: Buat konfigurasi Android
-        working-directory: app
-        run: flutter create . --platforms=android
+      - name: Check Flutter project
+        run: |
+          test -f "$PROJECT_DIR/pubspec.yaml"
+          test -f "$PROJECT_DIR/lib/main.dart"
 
-      - name: Ambil dependencies
-        working-directory: app
-        run: flutter pub get
+      - name: Setup Android platform
+        run: |
+          cd "$PROJECT_DIR"
+          if [ ! -d android ]; then
+            flutter create . --platforms=android
+          fi
 
-      - name: Build APK
-        working-directory: app
-        run: flutter build apk --release
+      - name: Install dependencies
+        run: |
+          cd "$PROJECT_DIR"
+          flutter pub get
 
-      - name: Simpan APK
+      - name: Build release APK
+        run: |
+          cd "$PROJECT_DIR"
+          flutter build apk --release
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Perawatan-Motor-Driver-APK
-          path: app/build/app/outputs/flutter-apk/app-release.apk
+          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
